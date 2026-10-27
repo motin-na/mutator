@@ -9,6 +9,8 @@ files use the TypeScript rules.
 
 from __future__ import annotations
 
+import re
+
 from mutator.crapper_link import ensure_crapper
 
 _BINARY = {
@@ -43,6 +45,7 @@ _UNARY_PARENTS = {"unary_expression", "unary_operator", "not_operator"}
 _BOOLEANS = {"true": "false", "false": "true", "True": "False", "False": "True"}
 
 _NUMBERS = {
+    "number_literal",
     "decimal_integer_literal",
     "integer_literal",
     "int_literal",
@@ -135,6 +138,8 @@ def _category(token: str) -> str:
 
 
 def _binary_mutant(language: str, token: str) -> str | None:
+    if language == 'cpp' and token == 'not_eq':
+        return '=='
     if language == "go" and token == "/":
         return None
     if token == "??" and language != "typescript":
@@ -315,6 +320,19 @@ def _visit_constant(node, token: str, found: list[RawSite]) -> None:
         _add(found, node, token, _flip01(token), "constant")
 
 
+_NATIVE_INTEGER = re.compile(r'((?:0[xX]|0[bB])?[01])([uUlLzZ]*)\Z')
+
+
+def _visit_native_integer(node, token, language, found):
+    if language not in {'c', 'cpp'} or node.type != 'number_literal' or token in {'0', '1'}:
+        return
+    match = _NATIVE_INTEGER.fullmatch(token)
+    if match is not None:
+        number, suffix = match.groups()
+        mutant = number[:-1] + _flip01(number[-1]) + suffix
+        _add(found, node, token, mutant, 'constant')
+
+
 def _visit_bool_lit(node, data: bytes, found: list[RawSite]) -> None:
     if node.type != "bool_lit":
         return
@@ -334,15 +352,56 @@ def _visit_leaf(node, data: bytes, language: str, found: list[RawSite]) -> None:
     _visit_negation(node, token, parent, found)
     _visit_boolean_token(node, token, found)
     _visit_constant(node, token, found)
+    _visit_native_integer(node, token, language, found)
 
 
 def _visit_node(node, data: bytes, language: str, found: list[RawSite]) -> None:
+    if language in {"c", "cpp"} and _native_nonruntime(node):
+        return
     if language == "typescript" and _in_type(node):
         return
     if node.child_count == 0:
         _visit_leaf(node, data, language, found)
     else:
         _visit_bool_lit(node, data, found)
+
+
+_NATIVE_NONRUNTIME = {
+    'comment', 'string_literal', 'raw_string_literal', 'char_literal',
+    'static_assert_declaration', 'type_descriptor', 'template_parameter_list',
+    'template_argument_list', 'sizeof_expression', 'alignof_expression',
+    'noexcept', 'requires_expression',
+}
+
+
+def _native_parent_excludes(node):
+    parent = node.parent
+    if parent is None:
+        return False
+    if parent.type in {'preproc_if', 'preproc_elif'}:
+        boundary = parent.child_by_field_name('condition')
+    elif parent.type == 'array_declarator':
+        boundary = parent.child_by_field_name('size')
+    else:
+        return False
+    return boundary is not None and boundary.id == node.id
+
+
+def _native_nonruntime(node):
+    """Исключить директивы и константы типов, сохранив тела внутри #if."""
+
+    current = node
+    while current is not None:
+        if current.type in _NATIVE_NONRUNTIME:
+            return True
+        if current.type.startswith('preproc_') and current.type not in {
+            'preproc_if', 'preproc_ifdef', 'preproc_else', 'preproc_elif', 'preproc_elifdef',
+        }:
+            return True
+        if _native_parent_excludes(current):
+            return True
+        current = current.parent
+    return False
 
 
 def _visit(node, data: bytes, language: str, found: list[RawSite]) -> None:

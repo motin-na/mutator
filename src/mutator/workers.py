@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import sys
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -270,6 +271,10 @@ def _overlay(worker: Path, root: Path, relative: str, original: bytes) -> None:
 def create_workers(
     base: Path, root: Path, relative: str, original: bytes, count: int
 ) -> list[Path]:
+    from mutator.crapper_link import ensure_crapper
+
+    if ensure_crapper().discover.language_of(relative) in {'c', 'cpp'}:
+        return _native_workers(base, root, relative, original, count)
     created = []
     first = relative.split("/", 1)[0]
     importers = importers_of(root, relative)
@@ -281,6 +286,21 @@ def create_workers(
         _overlay(worker, root, relative, original)
         for importer in importers:
             _copy_importer(worker, root, importer)
+        created.append(worker)
+    return created
+
+
+def _native_workers(base, root, relative, original, count):
+    """Копировать входные файлы: #include и CMake не должны уйти по ссылке в оригинал."""
+
+    created = []
+    for index in range(count):
+        worker = base / f'worker-{index}'
+        shutil.copytree(
+            root, worker, ignore_dangling_symlinks=True,
+            ignore=shutil.ignore_patterns(*SKIP_LINK, 'cmake-build-*', '*.gcda', '*.gcno', '*.o', '*.obj'),
+        )
+        (worker / relative).write_bytes(original)
         created.append(worker)
     return created
 

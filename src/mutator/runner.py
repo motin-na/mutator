@@ -232,6 +232,19 @@ _PLANS = {
 }
 
 
+def _native_plan(root: Path, source: Path) -> tuple[Command, Path]:
+    from mutator.native import test_command
+
+    if (root / 'CMakeLists.txt').is_file() or (root / 'Makefile').is_file() or (root / 'makefile').is_file():
+        directory = root
+    else:
+        directory = _nearest_marker(source, root, ('CMakeLists.txt', 'Makefile', 'makefile'))
+    return test_command(directory), directory
+
+
+_PLANS.update({'c': _native_plan, 'cpp': _native_plan})
+
+
 def test_plan(root: Path, source: Path, language: str, override: str | None) -> tuple[Command, Path]:
     """The test command and the directory it runs in.
 

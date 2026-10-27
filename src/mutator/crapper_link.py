@@ -23,7 +23,7 @@ def ensure_crapper():
         if not (sibling / "crapper").is_dir():
             raise ImportError(
                 "crapper is not installed and was not found at "
-                f"{sibling}. Clone github.com/unclebob/crapper next to mutator."
+                f"{sibling}. Установите github.com/motin-na/crapper рядом с mutator."
             ) from None
         sys.path.insert(0, str(sibling))
         import crapper
@@ -33,4 +33,9 @@ def ensure_crapper():
     import crapper.languages.treesitter
     import crapper.runners
 
+    if crapper.discover.language_of('source.cpp') != 'cpp':
+        raise ImportError(
+            'Для этого форка mutator нужен crapper с C/C++: '
+            'установите github.com/motin-na/crapper в текущее окружение.'
+        )
     return crapper
