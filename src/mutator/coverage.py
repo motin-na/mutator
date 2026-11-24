@@ -223,4 +223,6 @@ def covered_lines(root: Path, source_path: Path, language: str) -> set[int] | No
         html = _covered_from_pairs(_lookup(bundle.form_html, path))
         if html is not None:
             return html
+    if language == "bash":
+        return _covered_from_pairs(bundle.line_record(path, language))
     return _covered_from_pairs(_lookup(bundle.lcov, path))

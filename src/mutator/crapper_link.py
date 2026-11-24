@@ -33,9 +33,9 @@ def ensure_crapper():
     import crapper.languages.treesitter
     import crapper.runners
 
-    if crapper.discover.language_of('source.cpp') != 'cpp':
+    if crapper.discover.language_of("source.sv") != "systemverilog":
         raise ImportError(
-            'Для этого форка mutator нужен crapper с C/C++: '
+            'Для этого форка mutator нужен crapper 0.2.0 или новее с C/C++, Bash и Verilog/SystemVerilog: '
             'установите github.com/motin-na/crapper в текущее окружение.'
         )
     return crapper

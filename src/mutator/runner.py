@@ -242,7 +242,32 @@ def _native_plan(root: Path, source: Path) -> tuple[Command, Path]:
     return test_command(directory), directory
 
 
-_PLANS.update({'c': _native_plan, 'cpp': _native_plan})
+_MAKEFILES = ("Makefile", "makefile", "GNUmakefile")
+
+
+def _make_plan(root: Path, source: Path) -> tuple[Command, Path]:
+    directory = next(
+        (found for name in _MAKEFILES if (found := nearest(source, name, root)) is not None),
+        None,
+    )
+    if directory is not None:
+        return ["make", "-B", "test"], directory
+    print("Укажите команду поведенческих тестов через --test-command или добавьте цель make test.",
+          file=sys.stderr)
+    return ["false"], root
+
+
+def _bash_plan(root: Path, source: Path) -> tuple[Command, Path]:
+    test_script = "tests/run.sh"
+    directory = nearest(source, test_script, root)
+    if directory is not None:
+        return ["bash", test_script], directory
+    return _make_plan(root, source)
+
+
+_PLANS.update({
+    "c": _native_plan, "cpp": _native_plan, "bash": _bash_plan, "systemverilog": _make_plan,
+})
 
 
 def test_plan(root: Path, source: Path, language: str, override: str | None) -> tuple[Command, Path]:

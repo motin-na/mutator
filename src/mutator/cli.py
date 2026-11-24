@@ -68,6 +68,11 @@ A form id is `defn/<name>` or, for a private operation, `defn-/<name>`.
 uml-viewer joins that name to the operation and joins `:namespace` to the
 class.
 
+Bash: .sh, .bash и файлы без расширения с shebang Bash.
+Verilog/SystemVerilog: .v, .vh, .sv, .svh. Нужен crapper 0.2.0 или новее.
+Bash использует tests/run.sh при наличии. Для RTL и Bash поддерживаются
+make -B test и явный --test-command, выполняемые в копии проекта.
+
 Options:
   -h, --help                    Print this help and exit.
   --root <path>                 Project root. Metrics are written here.

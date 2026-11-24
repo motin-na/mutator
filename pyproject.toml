@@ -1,14 +1,14 @@
 [project]
 name = "mutator"
-version = "0.1.0"
-description = "Мутационное тестирование C/C++, Clojure, Java, Go, TypeScript, Rust и Python с отчётом для uml-viewer."
+version = "0.2.0"
+description = "Мутационное тестирование Bash, Verilog, SystemVerilog, C/C++, Clojure, Java, Go, TypeScript, Rust и Python с отчётом для uml-viewer."
 readme = "README.md"
 license = { file = "LICENSE" }
 classifiers = ["License :: OSI Approved :: Zero-Clause BSD (0BSD)"]
 requires-python = ">=3.11"
 dependencies = [
-    "tree-sitter>=0.24",
-    "tree-sitter-language-pack>=0.7",
+    "tree-sitter>=0.25,<0.27",
+    "tree-sitter-language-pack>=1.22.1,<2",
 ]
 
 [project.scripts]

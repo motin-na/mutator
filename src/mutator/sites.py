@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 
 from mutator.crapper_link import ensure_crapper
+from mutator.script_sites import script_mutations
 
 _BINARY = {
     "+": "-",
@@ -423,6 +424,11 @@ def discover_raw(source: str, language: str, path: str) -> list[RawSite]:
     found: list[RawSite] = []
     if language == "clojure":
         _visit_clojure(tree.root_node, data, found)
+    elif language in {"bash", "systemverilog"}:
+        for node, original, mutant, category in script_mutations(
+            tree.root_node, language, _BINARY, _category
+        ):
+            _add(found, node, original, mutant, category)
     else:
         _visit(tree.root_node, data, language, found)
     found.sort(key=lambda site: (site.line, site.start, site.end))

@@ -35,6 +35,7 @@ SKIP_LINK = frozenset(
         "target",
         "dist",
         "build",
+        "obj_dir",
         "out",
         "coverage",
         ".metrics",
@@ -273,8 +274,8 @@ def create_workers(
 ) -> list[Path]:
     from mutator.crapper_link import ensure_crapper
 
-    if ensure_crapper().discover.language_of(relative) in {'c', 'cpp'}:
-        return _native_workers(base, root, relative, original, count)
+    if ensure_crapper().discover.language_of(root / relative) in {"c", "cpp", "bash", "systemverilog"}:
+        return _copy_workers(base, root, relative, original, count)
     created = []
     first = relative.split("/", 1)[0]
     importers = importers_of(root, relative)
@@ -290,8 +291,8 @@ def create_workers(
     return created
 
 
-def _native_workers(base, root, relative, original, count):
-    """Копировать входные файлы: #include и CMake не должны уйти по ссылке в оригинал."""
+def _copy_workers(base, root, relative, original, count):
+    """Копировать проект для сборки, симуляции и разрешения путей относительно скрипта."""
 
     created = []
     for index in range(count):
