@@ -1,6 +1,6 @@
 [project]
 name = "mutator"
-version = "0.2.0"
+version = "0.2.1"
 description = "Мутационное тестирование Bash, Verilog, SystemVerilog, C/C++, Clojure, Java, Go, TypeScript, Rust и Python с отчётом для uml-viewer."
 readme = "README.md"
 license = { file = "LICENSE" }

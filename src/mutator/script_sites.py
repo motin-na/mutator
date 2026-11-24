@@ -118,23 +118,31 @@ def _bash_node(node, binary, category):
         yield from visitor(node)
 
 
-def _hdl_node(node, binary, category):
+def _hdl_expression(node, binary, category):
     op = node.child_by_field_name("operator")
-    if op is not None and node.type == "expression":
-        value = _text(op)
+    if op is None:
+        return
+    value = _text(op)
+    if value == "!" and op.type == "unary_operator":
+        yield op, value, "", "unary"
+        return
+    if node.child_by_field_name("left") is not None:
         replacement = _BITWISE.get(value) or binary.get(value)
-        if value == "!" and op.type == "unary_operator":
-            yield op, value, "", "unary"
-        elif node.child_by_field_name("left") is not None and replacement is not None:
+        if replacement is not None:
             yield op, value, replacement, category(value)
-    if node.type == "integral_number":
-        value = _text(node)
-        if _HDL_INTEGER.fullmatch(value):
-            yield node, value, _constant(value), "constant"
-    if node.type == "unbased_unsized_literal":
-        value = _text(node)
-        if value in {"'0", "'1"}:
-            yield node, value, _constant(value), "constant"
+
+
+def _hdl_integer(node):
+    value = _text(node)
+    if value in {"'0", "'1"} or _HDL_INTEGER.fullmatch(value):
+        yield node, value, _constant(value), "constant"
+
+
+def _hdl_node(node, binary, category):
+    if node.type == "expression":
+        yield from _hdl_expression(node, binary, category)
+    if node.type in {"integral_number", "unbased_unsized_literal"}:
+        yield from _hdl_integer(node)
 
 
 def script_mutations(root, language, binary, category):
